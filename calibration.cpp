@@ -23,12 +23,14 @@ using namespace cv;
 
 // detect a target and extracting target corners
 void detectCorners(Mat &src, Mat &dst) {
+    Mat grayImg;
+    cvtColor(src, grayImg, COLOR_BGR2GRAY);
     dst = src.clone();
     vector<Point2f> corners; // this will be filled by the detected corners
-    Size patternsize(8, 6);
-    bool patternfound = findChessboardCorners(src, patternsize, corners, CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
+    Size patternsize(9, 6);
+    bool patternfound = findChessboardCorners(dst, patternsize, corners, CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
     if (patternfound) {
-        cornerSubPix(src, corners, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+        cornerSubPix(grayImg, corners, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
     }
     drawChessboardCorners(dst, patternsize, Mat(corners), patternfound);
 }
