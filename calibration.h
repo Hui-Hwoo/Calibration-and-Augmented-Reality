@@ -19,7 +19,9 @@ using namespace cv;
 std::vector<cv::Point2f> detectCorners(Mat &src, Mat &dst);
 
 // save calibration image and corresponding rotations and translations
-void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Vec3f>> point_list);
+void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Point3f>> point_list,
+              Mat &cameraMatrix,
+              Mat &distCoeffs);
 
 // Calibrate the Camera
 void calibrateCamera();

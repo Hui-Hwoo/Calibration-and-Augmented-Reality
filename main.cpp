@@ -22,15 +22,15 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
     vector<vector<Point2f>> corner_list;
-    vector<vector<Vec3f>> point_list;
+    vector<vector<Point3f>> point_list;
 
     // each chessboard has the shape
     int x, y;
     int z = 0;
-    vector<Vec3f> point_set;
+    vector<Point3f> point_set;
     for (x = 0; x < 9; x++) {
         for (y = 0; y > -6; y--) {
-            point_set.push_back(Vec3f(x, y, z));
+            point_set.push_back(Point3f(x, y, z));
         }
     }
 
@@ -44,11 +44,21 @@ int main(int argc, char *argv[]) {
     }
 
     namedWindow("Video", 1); // identifies a window
+
+    // get a new frame from the camera, treat as a stream
     Mat frame;
-    Mat dst;
+    *capdev >> frame;
+    if (frame.empty()) {
+        printf("frame is empty\n");
+        return -1;
+    }
+    double data[3][3] = {{1, 0, double(frame.cols / 2)}, {0, 1, double(frame.rows / 2)}, {0, 0, 1}};
+    cv::Mat cameraMatrix = cv::Mat(Size(3, 3), CV_64FC1, data);
+    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
 
     for (;;) {
         // get a new frame from the camera, treat as a stream
+        Mat frame;
         *capdev >> frame;
         if (frame.empty()) {
             printf("frame is empty\n");
@@ -57,6 +67,11 @@ int main(int argc, char *argv[]) {
 
         Mat dst;
         vector<Point2f> corner_set = detectCorners(frame, dst);
+        // for(int i = 0; i < corner_set.size(); i++){
+        //     cout << corner_set[i] << " ";
+        // }
+        // cout << endl;
+        imshow("Video", dst);
 
         switch (pollKey()) {
         case 'q':
@@ -66,17 +81,16 @@ int main(int argc, char *argv[]) {
             if (corner_set.size() == 54) {
                 corner_list.push_back(corner_set);
                 point_list.push_back(point_set);
-                saveData(frame, corner_list, point_list);
-                cout << "there" << endl;
+                if (corner_list.size() > 5) {
+                    saveData(frame, corner_list, point_list, cameraMatrix, distCoeffs);
+                }
             }
             break;
         default:
             break;
         }
-
-        imshow("Video", dst);
     }
 
     delete capdev;
-    return (0);
+    return 0;
 }
