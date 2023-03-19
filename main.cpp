@@ -25,11 +25,12 @@ int main(int argc, char *argv[]) {
     vector<vector<Point3f>> point_list;
 
     // each chessboard has the shape
-    int x, y;
+    int y, x;
     int z = 0;
     vector<Point3f> point_set;
-    for (x = 0; x < 9; x++) {
-        for (y = 0; y > -6; y--) {
+
+    for (y = 0; y > -6; y--) {
+        for (x = 0; x < 9; x++) {
             point_set.push_back(Point3f(x, y, z));
         }
     }
