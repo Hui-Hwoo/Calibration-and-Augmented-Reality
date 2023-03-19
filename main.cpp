@@ -29,9 +29,9 @@ int main(int argc, char *argv[]) {
     int z = 0;
     vector<Point3f> point_set;
 
-    for (y = 0; y > -6; y--) {
+    for (y = 0; y < 6; y++) {
         for (x = 0; x < 9; x++) {
-            point_set.push_back(Point3f(x, y, z));
+            point_set.push_back(Point3f(x, -y, z));
         }
     }
 
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
                 corner_list.push_back(corner_set);
                 point_list.push_back(point_set);
                 if (corner_list.size() > 5) {
-                    saveData(frame, corner_list, point_list, cameraMatrix, distCoeffs);
+                    goldenGateBridge(frame, corner_list, point_list, cameraMatrix, distCoeffs);
                 }
             }
             break;

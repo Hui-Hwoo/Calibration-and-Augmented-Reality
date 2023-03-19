@@ -33,7 +33,11 @@ void calculatePos();
 void projectCorner();
 
 // Create a Virtual Object
-void createVirtualObj();
+void goldenGateBridge(Mat &src,
+                      vector<vector<Point2f>> corner_list,
+                      vector<vector<Point3f>> point_list,
+                      Mat &cameraMatrix,
+                      Mat &distCoeffs);
 
 // Detect Robust Features
 void detectRobustFeatures();
