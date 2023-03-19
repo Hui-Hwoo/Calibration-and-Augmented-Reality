@@ -22,26 +22,51 @@ using namespace std;
 using namespace cv;
 
 // detect a target and extracting target corners
-void detectCorners(Mat &src, Mat &dst) {
-    Mat grayImg;
-    cvtColor(src, grayImg, COLOR_BGR2GRAY);
+std::vector<cv::Point2f> detectCorners(cv::Mat &src, cv::Mat &dst) {
+    cv::Mat grayImg;
+    cv::cvtColor(src, grayImg, cv::COLOR_BGR2GRAY);
     dst = src.clone();
-    vector<Point2f> corners; // this will be filled by the detected corners
-    Size patternsize(9, 6);
-    bool patternfound = findChessboardCorners(dst, patternsize, corners, CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
+    std::vector<cv::Point2f> corner_set = {}; // this will be filled by the detected corners
+    cv::Size patternsize(9, 6);
+    bool patternfound = cv::findChessboardCorners(dst, patternsize, corner_set, CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
     if (patternfound) {
-        cornerSubPix(grayImg, corners, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+        cv::cornerSubPix(grayImg, corner_set, cv::Size(11, 11), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+        // std::cout << "found " << corner_set.size() << " corners, first corner at (" << corner_set[0].x << "," << corner_set[0].y << ")" << std::endl;
+    } else {
+        // std::cout << "found 0 corners" << std::endl;
     }
-    drawChessboardCorners(dst, patternsize, Mat(corners), patternfound);
+    cv::drawChessboardCorners(dst, patternsize, cv::Mat(corner_set), patternfound);
+    return corner_set;
 }
 
 // specify calibration images
-void selectCalibrationImg() {
-    std::vector<cv::Vec3f> point_set;
-    std::vector<std::vector<cv::Vec3f>> point_list;
-    std::vector<std::vector<cv::Point2f>> corner_list;
+void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Vec3f>> point_list) {
+    // save Image
 
-    
+    // save rotations and translations
+    Size imageSize = src.size();
+    vector<vector<double>> vec = {{1, 0, double(src.cols / 2)}, {0, 1, double(src.rows / 2)}, {0, 0, 1}};
+    Mat cameraMatrix(Size(3, 3), CV_64FC1, vec.data());
+
+    vector<double> distortionCoeffs = {0, 0, 0, 0, 0};
+    Mat rvecs; // rotations
+    Mat tvecs; // translations
+    int flag = CALIB_FIX_ASPECT_RATIO;
+    calibrateCamera(point_list, corner_list, imageSize, cameraMatrix, distortionCoeffs, rvecs, tvecs, flag);
+    Mat_<double> cameraMatrixVec = cameraMatrix;
+    for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 3; c++) {
+            cout << cameraMatrixVec(r, c) << " - ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+    for (int r = 0; r < distortionCoeffs.size(); r++) {
+        cout << distortionCoeffs[r] << " - ";
+    }
+    cout << "done" << endl;
+
+    return;
 }
 
 // Calibrate the Camera

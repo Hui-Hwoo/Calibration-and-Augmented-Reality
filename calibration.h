@@ -16,10 +16,10 @@ using namespace std;
 using namespace cv;
 
 // detect a target and extracting target corners
-void detectCorners(Mat &src, Mat &dst);
+std::vector<cv::Point2f> detectCorners(Mat &src, Mat &dst);
 
-// specify calibration images
-void selectCalibrationImg();
+// save calibration image and corresponding rotations and translations
+void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Vec3f>> point_list);
 
 // Calibrate the Camera
 void calibrateCamera();

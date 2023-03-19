@@ -6,7 +6,7 @@ PRODUCTS = main
 OPENCV = `pkg-config opencv4 --cflags --libs`
 LIBS = $(OPENCV)
 
-main : main.cpp calibration.cpp
+main : main.cpp calibration.cpp 
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 .PHONY: clean
