@@ -1,3 +1,11 @@
+main
+/img/*
+/*.dSYM/*
+.clang-format
+.vscode
+.DS_Store
+
+
 # Prerequisites
 *.d
 
