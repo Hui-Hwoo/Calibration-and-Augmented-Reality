@@ -95,7 +95,7 @@ void saveData(
     }
     contourAry.push_back(contour);
     if (contour.size() > 0) {
-        drawContours(projected, contourAry, -1, Scalar(0, 0, 255), 2);
+        drawContours(projected, contourAry, -1, Scalar(0, 0, 255), 4);
         imshow("test", projected);
     }
     // Scalar color(0, 0, 255); // red color
@@ -128,28 +128,75 @@ void goldenGateBridge(Mat &src,
     std::vector<cv::Mat> rvec, tvec;
     double error = cv::calibrateCamera(point_list, corner_list, imageSize, cameraMatrix, distCoeffs, rvec, tvec, CALIB_FIX_ASPECT_RATIO);
 
-    float unit = float(7) / (14 * 20);
+    float unit = float(7) / (14 * 4);
 
     // left side and right side
     vector<Point3f> leftFrame = {};
     vector<Point3f> rightFrame = {};
     for (float i = 1.0; i < 2; i += unit) {
-        float z = 1 + 2 * (i - 1) * (i - 1);
+        float z = 1.0 + 2 * (i - 1) * (i - 1);
         leftFrame.push_back(Point3f(i, -2.5, z));
         rightFrame.push_back(Point3f(i, -3.5, z));
     }
     for (float i = 2.0; i < 7; i += unit) {
-        float z = 1 + 2 * (i - 4.5) * (i - 4.5) / 6.25;
+        float z = 1.0 + 2 * (i - 4.5) * (i - 4.5) / 6.25;
         leftFrame.push_back(Point3f(i, -2.5, z));
         rightFrame.push_back(Point3f(i, -3.5, z));
     }
     for (float i = 7.0; i < 8; i += unit) {
-        float z = 1 + 2 * (i - 8) * (i - 8);
+        float z = 1.0 + 2 * (i - 8) * (i - 8);
         leftFrame.push_back(Point3f(i, -2.5, z));
         rightFrame.push_back(Point3f(i, -3.5, z));
     }
     leftFrame.push_back(Point3f(8, -2.5, 1));
     rightFrame.push_back(Point3f(8, -3.5, 1));
+
+    // surface
+    vector<Point3f> surfaceFrame = {};
+    for (float i = 1.0; i <= 2; i += unit) {
+        float z = 1.0 + 2 * (i - 1) * (i - 1);
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+        surfaceFrame.push_back(Point3f(i, -2.5, z));
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+        surfaceFrame.push_back(Point3f(i, -3.5, 1));
+        surfaceFrame.push_back(Point3f(i, -3.5, z));
+        surfaceFrame.push_back(Point3f(i, -3.5, 1));
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+    }
+
+    for (float i = 2.0; i <= 7; i += unit) {
+        float z = 1.0 + 2 * (i - 4.5) * (i - 4.5) / 6.25;
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+        surfaceFrame.push_back(Point3f(i, -2.5, z));
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+        surfaceFrame.push_back(Point3f(i, -3.5, 1));
+        surfaceFrame.push_back(Point3f(i, -3.5, z));
+        surfaceFrame.push_back(Point3f(i, -3.5, 1));
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+    }
+
+    for (float i = 7.0; i <= 8; i += unit) {
+        float z = 1.0 + 2 * (i - 8) * (i - 8);
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+        surfaceFrame.push_back(Point3f(i, -2.5, z));
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+        surfaceFrame.push_back(Point3f(i, -3.5, 1));
+        surfaceFrame.push_back(Point3f(i, -3.5, z));
+        surfaceFrame.push_back(Point3f(i, -3.5, 1));
+        surfaceFrame.push_back(Point3f(i, -2.5, 1));
+    }
+
+    // base
+    vector<Point3f> baseFrame = {};
+    for (int i = 2; i < 8; i += 5) {
+        baseFrame.push_back(Point3f(float(i), -2.5, 1.0));
+        baseFrame.push_back(Point3f(float(i), -2.5, 0.0));
+        baseFrame.push_back(Point3f(float(i), -2.5, 3.0));
+        baseFrame.push_back(Point3f(float(i), -3.5, 3.0));
+        baseFrame.push_back(Point3f(float(i), -3.5, 0.0));
+        baseFrame.push_back(Point3f(float(i), -3.5, 1.0));
+        baseFrame.push_back(Point3f(float(i), -2.5, 1.0));
+    }
 
     vector<Point2f> leftPoints;
     projectPoints(leftFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, leftPoints);
@@ -165,9 +212,26 @@ void goldenGateBridge(Mat &src,
         rightContour.push_back(Point(rightPoints[i].x, rightPoints[i].y));
     }
 
+    vector<Point2f> surfacePoints;
+    projectPoints(surfaceFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, surfacePoints);
+    vector<Point> surfaceContour = {};
+    for (int i = 0; i < surfacePoints.size(); i++) {
+        surfaceContour.push_back(Point(surfacePoints[i].x, surfacePoints[i].y));
+    }
+
+    vector<Point2f> basePoints;
+    projectPoints(baseFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, basePoints);
+    vector<Point> baseContour = {};
+    for (int i = 0; i < basePoints.size(); i++) {
+        baseContour.push_back(Point(basePoints[i].x, basePoints[i].y));
+    }
+
     vector<vector<Point>> contourAry = {};
     contourAry.push_back(rightContour);
     contourAry.push_back(leftContour);
+    contourAry.push_back(surfaceContour);
+    contourAry.push_back(baseContour);
+
     Mat projected = src.clone();
     drawContours(projected, contourAry, -1, Scalar(0, 0, 255), 2);
     // imwrite("./img/test.png", projected.clone());
