@@ -16,30 +16,21 @@ using namespace std;
 using namespace cv;
 
 // detect a target and extracting target corners
-std::vector<cv::Point2f> detectCorners(Mat &src, Mat &dst);
+vector<Point2f> detectCorners(Mat &src, Mat &dst);
+
+// rename image and save it to Resources folder
+int saveImage(Mat &originalImage, string format = "png");
 
 // save calibration image and corresponding rotations and translations
-void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Point3f>> point_list,
-              Mat &cameraMatrix,
-              Mat &distCoeffs);
-
-// Calibrate the Camera
-void calibrateCamera();
-
-// Calculate Current Position of the Camera
-void calculatePos();
+void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Point3f>> point_list, Mat &cameraMatrix, Mat &distCoeffs);
 
 // Project Outside Corners or 3D Axes
-void projectCorner();
+void projectCorner(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs);
 
 // Create a Virtual Object
-void goldenGateBridge(Mat &src,
-                      vector<vector<Point2f>> corner_list,
-                      vector<vector<Point3f>> point_list,
-                      Mat &cameraMatrix,
-                      Mat &distCoeffs);
+void goldenGateBridge(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs);
 
 // Detect Robust Features
-void detectRobustFeatures();
+void detectRobustFeatures(Mat &src, Mat &dst);
 
 #endif

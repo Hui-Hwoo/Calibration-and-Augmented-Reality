@@ -1,4 +1,7 @@
-main
+cameraConfig.csv
+run_calibrate
+run_feature
+run_overlay
 /img/*
 /*.dSYM/*
 .clang-format

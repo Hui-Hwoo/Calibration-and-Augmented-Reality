@@ -1,12 +1,13 @@
 /**
-    Matching Algorithm for Content-based Image Retrieval (CBIR)
+    Calibration and Augmented Reality
     Created by Hui Hu for CS 5330 Computer Vision Spring 2023
 
-    Functions to extract feature vector and calculate the distance
+    Functions to calibrate camera and generate virtual objects in a scene
 */
 
 // basic
 #include <cmath>
+#include <filesystem>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
@@ -17,117 +18,125 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 // custom function
+#include "fileHelper.h"
 
 using namespace std;
 using namespace cv;
 
 // detect a target and extracting target corners
-std::vector<cv::Point2f> detectCorners(cv::Mat &src, cv::Mat &dst) {
-    cv::Mat grayImg;
-    cv::cvtColor(src, grayImg, cv::COLOR_BGR2GRAY);
+vector<Point2f> detectCorners(Mat &src, Mat &dst) {
+    // get grayscale image
+    Mat grayImg;
+    cvtColor(src, grayImg, COLOR_BGR2GRAY);
+
     dst = src.clone();
-    std::vector<cv::Point2f> corner_set = {}; // this will be filled by the detected corners
-    cv::Size patternsize(9, 6);
-    bool patternfound = cv::findChessboardCorners(dst, patternsize, corner_set, CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
+    vector<Point2f> corner_set = {}; // this will be filled by the detected corners
+    Size patternsize(9, 6);
+
+    // Find Chessboard Corners
+    bool patternfound = findChessboardCorners(dst, patternsize, corner_set, CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
+
     if (patternfound) {
-        cv::cornerSubPix(grayImg, corner_set, cv::Size(9, 9), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
-        // std::cout << "found " << corner_set.size() << " corners, first corner at (" << corner_set[0].x << "," << corner_set[0].y << ")" << std::endl;
+        cornerSubPix(grayImg, corner_set, Size(9, 9), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+        // cout << "found " << corner_set.size() << " corners, first corner at (" << corner_set[0].x << "," << corner_set[0].y << ")" << endl;
     } else {
-        // std::cout << "found 0 corners" << std::endl;
+        // cout << "found 0 corners" << endl;
     }
-    cv::drawChessboardCorners(dst, patternsize, cv::Mat(corner_set), patternfound);
+
+    // Draw Chessboard Corners on Image
+    drawChessboardCorners(dst, patternsize, Mat(corner_set), patternfound);
+
     return corner_set;
 }
 
+// rename image and save it to Resources folder
+int saveImage(Mat &originalImage, string format) {
+    // get seconds since epoch
+    const auto current_time = chrono::system_clock::now();
+    long seconds = chrono::duration_cast<chrono::seconds>(current_time.time_since_epoch()).count();
+
+    // convert long seconds to string timeStamp
+    stringstream stream;
+    stream << seconds;
+    string timeStamp = stream.str();
+
+    // Open the directory or create it
+    filesystem::create_directories("./img/");
+
+    string imageName = "./img/" + timeStamp + "." + format;
+    imwrite(imageName, originalImage.clone());
+    return 0;
+}
+
 // specify calibration images
-void saveData(
-    Mat &src,
-    vector<vector<Point2f>> corner_list,
-    vector<vector<Point3f>> point_list,
-    Mat &cameraMatrix,
-    Mat &distCoeffs) {
+void saveData(Mat &src, vector<vector<Point2f>> corner_list, vector<vector<Point3f>> point_list, Mat &cameraMatrix, Mat &distCoeffs) {
     // save Image
+    saveImage(src, "png");
 
     // save rotations and translations
     Size imageSize = src.size();
+    char filePath[] = "./cameraConfig.csv";
 
-    // std::cout << "Camera matrix before:" << std::endl
-    //           << cameraMatrix << std::endl;
-    // std::cout << "Distortion coefficients before:" << std::endl
-    //           << distCoeffs << std::endl
-    //           << endl;
+    if (corner_list.size() > 5) {
+        cout << "Camera matrix before:" << endl
+             << cameraMatrix << endl;
+        cout << "Distortion coefficients before:" << endl
+             << distCoeffs << endl
+             << endl;
+    }
 
     // Calibrate camera
-    std::vector<cv::Mat> rvec, tvec;
-    double error = cv::calibrateCamera(point_list, corner_list, imageSize, cameraMatrix, distCoeffs, rvec, tvec, CALIB_FIX_ASPECT_RATIO);
+    vector<Mat> rvec, tvec;
+    double error = calibrateCamera(point_list, corner_list, imageSize, cameraMatrix, distCoeffs, rvec, tvec, CALIB_FIX_ASPECT_RATIO);
+    addData(filePath, cameraMatrix, distCoeffs, true);
 
     // Output the results
-    // std::cout << "Camera matrix after:" << std::endl
-    //           << cameraMatrix << std::endl;
-    // std::cout << "Distortion coefficients after:" << std::endl
-    //           << distCoeffs << std::endl;
-    // std::cout << "Rotation vector:" << std::endl
-    //           << rvec << std::endl;
-    // std::cout << "Translation vector:" << std::endl
-    //           << tvec << std::endl;
+    if (corner_list.size() > 5) {
+        cout << "Camera matrix after:" << endl
+             << cameraMatrix << endl;
+        cout << "Distortion coefficients after:" << endl
+             << distCoeffs << endl;
 
-    // cout << "error: " << error << endl
-    //      //  << endl
-    //      << endl;
-
-    vector<Point2f> imagePoints;
-    vector<Point3f> shape = {
-        Point3f(-1, 1, 0),
-        Point3f(9, 1, 0),
-        Point3f(9, -6, 0),
-        Point3f(-1, -6, 0)};
-    // vector<Point3f> shape = {
-    //     Point3f(0.5, 0.5, 0),
-    //     Point3f(0, 1.5, 0)};
-
-    projectPoints(shape, rvec[0], tvec[0], cameraMatrix, distCoeffs, imagePoints);
-
-    Mat projected = src.clone();
-    vector<vector<Point>> contourAry = {};
-    vector<Point> contour = {};
-    for (int i = 0; i < imagePoints.size(); i++) {
-        contour.push_back(Point(imagePoints[i].x, imagePoints[i].y));
+        cout << "error: " << error << endl
+             << endl
+             << endl;
     }
-    contourAry.push_back(contour);
-    if (contour.size() > 0) {
-        drawContours(projected, contourAry, -1, Scalar(0, 0, 255), 4);
-        imshow("test", projected);
-    }
-    // Scalar color(0, 0, 255); // red color
-    // int thickness = 2;
-    // int line_type = cv::LINE_AA; // anti-aliased line
-    // int shift = 0;
-    // arrowedLine(projected, contour[0], contour[1], color, thickness, line_type, shift);
-    imshow("test", projected);
-
-    return;
 }
 
-// Calibrate the Camera
-void calibrateCamera();
-
-// Calculate Current Position of the Camera
-void calculatePos();
-
 // Project Outside Corners or 3D Axes
-void projectCorner();
+void projectCorner(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs) {
+    vector<Point2f> imagePoints;
+    vector<Point3f> shape = {Point3f(-1, 1, 0), Point3f(9, 1, 0), Point3f(9, -6, 0), Point3f(-1, -6, 0), Point3f(0, 0, 0), Point3f(1, 0, 0), Point3f(0, 1, 0), Point3f(0, 0, 1)};
+
+    projectPoints(shape, rvec, tvec, cameraMatrix, distCoeffs, imagePoints);
+
+    dst = src.clone();
+    vector<vector<Point>> contourAry = {};
+    vector<Point> contour = {};
+    vector<Point> arrow = {};
+    for (int i = 0; i < 4; i++) {
+        contour.push_back(Point(imagePoints[i].x, imagePoints[i].y));
+    }
+    for (int i = 4; i < 8; i++) {
+        arrow.push_back(Point(imagePoints[i].x, imagePoints[i].y));
+    }
+
+    contourAry.push_back(contour);
+    if (contour.size() > 0) {
+        drawContours(dst, contourAry, -1, Scalar(0, 0, 255), 4);
+    }
+
+    Scalar color(0, 255, 0); // green color
+    int thickness = 2;
+    int line_type = LINE_AA; // anti-aliased line
+    int shift = 0;
+    arrowedLine(dst, arrow[0], arrow[1], color, thickness, line_type, shift); // x
+    arrowedLine(dst, arrow[0], arrow[2], color, thickness, line_type, shift); // y
+    arrowedLine(dst, arrow[0], arrow[3], color, thickness, line_type, shift); // z
+}
 
 // Create a Virtual Object
-void goldenGateBridge(Mat &src,
-                      vector<vector<Point2f>> corner_list,
-                      vector<vector<Point3f>> point_list,
-                      Mat &cameraMatrix,
-                      Mat &distCoeffs) {
-
-    Size imageSize = src.size();
-    std::vector<cv::Mat> rvec, tvec;
-    double error = cv::calibrateCamera(point_list, corner_list, imageSize, cameraMatrix, distCoeffs, rvec, tvec, CALIB_FIX_ASPECT_RATIO);
-
+void goldenGateBridge(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs) {
     float unit = float(7) / (14 * 4);
 
     // left side and right side
@@ -199,28 +208,28 @@ void goldenGateBridge(Mat &src,
     }
 
     vector<Point2f> leftPoints;
-    projectPoints(leftFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, leftPoints);
+    projectPoints(leftFrame, rvec, tvec, cameraMatrix, distCoeffs, leftPoints);
     vector<Point> leftContour = {};
     for (int i = 0; i < leftPoints.size(); i++) {
         leftContour.push_back(Point(leftPoints[i].x, leftPoints[i].y));
     }
 
     vector<Point2f> rightPoints;
-    projectPoints(rightFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, rightPoints);
+    projectPoints(rightFrame, rvec, tvec, cameraMatrix, distCoeffs, rightPoints);
     vector<Point> rightContour = {};
     for (int i = 0; i < rightPoints.size(); i++) {
         rightContour.push_back(Point(rightPoints[i].x, rightPoints[i].y));
     }
 
     vector<Point2f> surfacePoints;
-    projectPoints(surfaceFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, surfacePoints);
+    projectPoints(surfaceFrame, rvec, tvec, cameraMatrix, distCoeffs, surfacePoints);
     vector<Point> surfaceContour = {};
     for (int i = 0; i < surfacePoints.size(); i++) {
         surfaceContour.push_back(Point(surfacePoints[i].x, surfacePoints[i].y));
     }
 
     vector<Point2f> basePoints;
-    projectPoints(baseFrame, rvec[0], tvec[0], cameraMatrix, distCoeffs, basePoints);
+    projectPoints(baseFrame, rvec, tvec, cameraMatrix, distCoeffs, basePoints);
     vector<Point> baseContour = {};
     for (int i = 0; i < basePoints.size(); i++) {
         baseContour.push_back(Point(basePoints[i].x, basePoints[i].y));
@@ -232,11 +241,18 @@ void goldenGateBridge(Mat &src,
     contourAry.push_back(surfaceContour);
     contourAry.push_back(baseContour);
 
-    Mat projected = src.clone();
-    drawContours(projected, contourAry, -1, Scalar(0, 0, 255), 2);
-    // imwrite("./img/test.png", projected.clone());
-    imshow("test", projected);
+    dst  = src.clone();
+    drawContours(dst, contourAry, -1, Scalar(0, 0, 255), 2);
 };
 
 // Detect Robust Features
-void detectRobustFeatures();
+void detectRobustFeatures(Mat &src, Mat &dst) {
+    Mat grey, alpha, original;
+    cvtColor(src, grey, COLOR_BGR2GRAY);
+    cornerHarris(grey, alpha, 2, 3, 0.04);
+
+    src.convertTo(original, CV_32FC3);
+    cvtColor(alpha, alpha, COLOR_GRAY2BGR);
+
+    multiply(original, alpha, dst);
+}

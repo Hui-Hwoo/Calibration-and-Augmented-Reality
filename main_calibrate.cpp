@@ -1,9 +1,9 @@
-//
-//  vidDisplay.cpp
-//  Computer Vision - Project 1
-//
-//  Created by Hui Hu on 1/24/23.
-//
+/**
+    Calibration and Augmented Reality
+    Created by Hui Hu for CS 5330 Computer Vision Spring 2023
+
+    Detect chessboard corners and get camera calibration parameters
+*/
 
 #include <iostream>
 #include <stdio.h>
@@ -21,24 +21,8 @@ using namespace cv;
 using namespace std;
 
 int main(int argc, char *argv[]) {
-    vector<vector<Point2f>> corner_list;
-    vector<vector<Point3f>> point_list;
-
-    // each chessboard has the shape
-    int y, x;
-    int z = 0;
-    vector<Point3f> point_set;
-
-    for (y = 0; y < 6; y++) {
-        for (x = 0; x < 9; x++) {
-            point_set.push_back(Point3f(x, -y, z));
-        }
-    }
-
-    VideoCapture *capdev;
-
-    // open the video device
-    capdev = new VideoCapture(0);
+    // Open the video device
+    VideoCapture *capdev = new VideoCapture(0);
     if (!capdev->isOpened()) {
         printf("Unable to open video device\n");
         return (-1);
@@ -46,16 +30,30 @@ int main(int argc, char *argv[]) {
 
     namedWindow("Video", 1); // identifies a window
 
-    // get a new frame from the camera, treat as a stream
+    // Create or/and initialize basic variables
+    vector<vector<Point2f>> corner_list;
+    vector<vector<Point3f>> point_list;
+    Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
+
+    // Each detected chessboard has the shape
+    vector<Point3f> point_set;
+    for (int y = 0; y < 6; y++) {
+        for (int x = 0; x < 9; x++) {
+            point_set.push_back(Point3f(x, -y, 0));
+        }
+    }
+
+    // Get the size of frame to initialize cameraMatrix
+    Mat cameraMatrix;
     Mat frame;
     *capdev >> frame;
-    if (frame.empty()) {
-        printf("frame is empty\n");
-        return -1;
+    if (!frame.empty()) {
+        double data[3][3] = {{1, 0, double(frame.cols / 2)}, {0, 1, double(frame.rows / 2)}, {0, 0, 1}};
+        cameraMatrix = Mat(Size(3, 3), CV_64FC1, data);
+    } else {
+        double data[3][3] = {{1, 0, double(1920 / 2)}, {0, 1, double(1080 / 2)}, {0, 0, 1}};
+        cameraMatrix = Mat(Size(3, 3), CV_64FC1, data);
     }
-    double data[3][3] = {{1, 0, double(frame.cols / 2)}, {0, 1, double(frame.rows / 2)}, {0, 0, 1}};
-    cv::Mat cameraMatrix = cv::Mat(Size(3, 3), CV_64FC1, data);
-    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
 
     for (;;) {
         // get a new frame from the camera, treat as a stream
@@ -68,10 +66,6 @@ int main(int argc, char *argv[]) {
 
         Mat dst;
         vector<Point2f> corner_set = detectCorners(frame, dst);
-        // for(int i = 0; i < corner_set.size(); i++){
-        //     cout << corner_set[i] << " ";
-        // }
-        // cout << endl;
         imshow("Video", dst);
 
         switch (pollKey()) {
@@ -82,9 +76,8 @@ int main(int argc, char *argv[]) {
             if (corner_set.size() == 54) {
                 corner_list.push_back(corner_set);
                 point_list.push_back(point_set);
-                if (corner_list.size() > 5) {
-                    goldenGateBridge(frame, corner_list, point_list, cameraMatrix, distCoeffs);
-                }
+                // only keep the best parameters
+                saveData(frame, corner_list, point_list, cameraMatrix, distCoeffs);
             }
             break;
         default:
