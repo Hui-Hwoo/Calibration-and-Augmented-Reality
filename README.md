@@ -1,5 +1,3 @@
-# Use One Travel Day
-
 # Calibration-and-Augmented-Reality
 
 This project involves learning how to calibrate a camera and using the calibration to generate virtual objects in a scene. The project uses a checkerboard pattern as a target, and the tasks involved include detecting and extracting the checkerboard corners, selecting calibration images, calibrating the camera, and generating virtual objects in a scene relative to the checkerboard. 
