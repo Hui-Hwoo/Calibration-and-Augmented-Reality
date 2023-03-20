@@ -28,32 +28,7 @@ int main(int argc, char *argv[]) {
         return (-1);
     }
 
-    namedWindow("Video", 1); // identifies a window
-
-    // Create or/and initialize basic variables
-    vector<vector<Point2f>> corner_list;
-    vector<vector<Point3f>> point_list;
-    Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
-
-    // Each detected chessboard has the shape
-    vector<Point3f> point_set;
-    for (int y = 0; y < 6; y++) {
-        for (int x = 0; x < 9; x++) {
-            point_set.push_back(Point3f(x, -y, 0));
-        }
-    }
-
-    // Get the size of frame to initialize cameraMatrix
-    Mat cameraMatrix;
-    Mat frame;
-    *capdev >> frame;
-    if (!frame.empty()) {
-        double data[3][3] = {{1, 0, double(frame.cols / 2)}, {0, 1, double(frame.rows / 2)}, {0, 0, 1}};
-        cameraMatrix = Mat(Size(3, 3), CV_64FC1, data);
-    } else {
-        double data[3][3] = {{1, 0, double(1920 / 2)}, {0, 1, double(1080 / 2)}, {0, 0, 1}};
-        cameraMatrix = Mat(Size(3, 3), CV_64FC1, data);
-    }
+    namedWindow("Feature", 1); // identifies a window
 
     for (;;) {
         // get a new frame from the camera, treat as a stream
@@ -65,29 +40,15 @@ int main(int argc, char *argv[]) {
         }
 
         Mat dst;
-        vector<Point2f> corner_set = detectCorners(frame, dst);
-        // detectRobustFeatures(frame, dst);
-        // for(int i = 0; i < corner_set.size(); i++){
-        //     cout << corner_set[i] << " ";
-        // }
-        // cout << endl;
-        imshow("Video", dst);
+        detectRobustFeatures(frame, dst);
+        imshow("Feature", dst);
 
         switch (pollKey()) {
         case 'q':
         case 27:
             return 0;
         case 's':
-            // imwrite("./img/task1.png", dst.clone());
-            if (corner_set.size() == 54) {
-                corner_list.push_back(corner_set);
-                point_list.push_back(point_set);
-                saveData(frame, corner_list, point_list, cameraMatrix, distCoeffs);
-                // if (corner_list.size() > 5) {
-                    
-                //     // goldenGateBridge(frame, corner_list, point_list, cameraMatrix, distCoeffs);
-                // }
-            }
+            saveImage(dst, "png");
             break;
         default:
             break;

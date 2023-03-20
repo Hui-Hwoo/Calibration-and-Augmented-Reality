@@ -241,18 +241,116 @@ void goldenGateBridge(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatri
     contourAry.push_back(surfaceContour);
     contourAry.push_back(baseContour);
 
-    dst  = src.clone();
+    dst = src.clone();
     drawContours(dst, contourAry, -1, Scalar(0, 0, 255), 2);
 };
 
+void tower(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs) {
+    float unit = float(1) / 4;
+
+    // layers
+    vector<Point3f> layers = {};
+    layers.push_back(Point3f(0, 0, 0));
+    for (float z = 0.0; z < 6; z += unit) {
+        float x = 0.5 + (z - 3) * (z - 3) / 18;
+        layers.push_back(Point3f(x, x, z));
+        layers.push_back(Point3f(x, -x, z));
+        layers.push_back(Point3f(-x, -x, z));
+        layers.push_back(Point3f(-x, x, z));
+        layers.push_back(Point3f(x, x, z));
+    }
+    for (float z = 6.0; z < 8; z += unit) {
+        float x = (8 - z) / 2;
+        layers.push_back(Point3f(x, x, z));
+        layers.push_back(Point3f(x, -x, z));
+        layers.push_back(Point3f(-x, -x, z));
+        layers.push_back(Point3f(-x, x, z));
+        layers.push_back(Point3f(x, x, z));
+    }
+    layers.push_back(Point3f(0, 0, 8));
+
+
+    // axis
+    vector<Point3f> axis = {};
+    for (float z = 0.0; z < 6; z += unit) {
+        float x = 0.5 + (z - 3) * (z - 3) / 18;
+        axis.push_back(Point3f(x, x, z));
+    }
+    for (float z = 6.0; z < 8; z += unit) {
+        float x = (8 - z) / 2;
+        axis.push_back(Point3f(x, x, z));
+    }
+    for (float z = 8.0; z > 6; z -= unit) {
+        float x = (8 - z) / 2;
+        axis.push_back(Point3f(x, -x, z));
+    }
+    for (float z = 6.0; z > 0; z -= unit) {
+        float x = 0.5 + (z - 3) * (z - 3) / 18;
+        axis.push_back(Point3f(x, -x, z));
+    }
+    for (float z = 0.0; z < 6; z += unit) {
+        float x = 0.5 + (z - 3) * (z - 3) / 18;
+        axis.push_back(Point3f(-x, -x, z));
+    }
+    for (float z = 6.0; z < 8; z += unit) {
+        float x = (8 - z) / 2;
+        axis.push_back(Point3f(-x, -x, z));
+    }
+    for (float z = 8.0; z > 6; z -= unit) {
+        float x = (8 - z) / 2;
+        axis.push_back(Point3f(-x, x, z));
+    }
+    for (float z = 6.0; z > 0; z -= unit) {
+        float x = 0.5 + (z - 3) * (z - 3) / 18;
+        axis.push_back(Point3f(-x, x, z));
+    }
+
+    vector<Point2f> layersPoints;
+    projectPoints(layers, rvec, tvec, cameraMatrix, distCoeffs, layersPoints);
+    vector<Point> layersContour = {};
+    for (int i = 0; i < layersPoints.size(); i++) {
+        layersContour.push_back(Point(layersPoints[i].x, layersPoints[i].y));
+    }
+
+    vector<Point2f> axisPoints;
+    projectPoints(axis, rvec, tvec, cameraMatrix, distCoeffs, axisPoints);
+    vector<Point> axisContour = {};
+    for (int i = 0; i < axisPoints.size(); i++) {
+        axisContour.push_back(Point(axisPoints[i].x, axisPoints[i].y));
+    }
+
+    vector<vector<Point>> contourAry = {};
+    contourAry.push_back(layersContour);
+    contourAry.push_back(axisContour);
+
+    dst = src.clone();
+    drawContours(dst, contourAry, -1, Scalar(255, 0, 0), 2);
+}
+
 // Detect Robust Features
-void detectRobustFeatures(Mat &src, Mat &dst) {
-    Mat grey, alpha, original;
-    cvtColor(src, grey, COLOR_BGR2GRAY);
-    cornerHarris(grey, alpha, 2, 3, 0.04);
+void detectRobustFeatures(Mat &src, Mat &dst_circled) {
+    int thresh = 200;
+    int blockSize = 2;
+    int apertureSize = 3;
+    double k = 0.04;
 
-    src.convertTo(original, CV_32FC3);
-    cvtColor(alpha, alpha, COLOR_GRAY2BGR);
+    Mat src_gray, detected, original;
+    Mat dst = cv::Mat::zeros(src.size(), CV_32FC1);
 
-    multiply(original, alpha, dst);
+    cvtColor(src, src_gray, COLOR_BGR2GRAY);
+    cv::cornerHarris(src_gray, dst, blockSize, apertureSize, k);
+
+    cv::Mat dst_norm;
+    cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat());
+    // cv::convertScaleAbs(dst_norm, dst_norm_scaled);
+
+    dst_circled = src.clone();
+
+    for (int i = 0; i < dst_norm.rows; i++) {
+        for (int j = 0; j < dst_norm.cols; j++) {
+            if ((int)dst_norm.at<float>(i, j) > thresh) {
+                cv::circle(dst_circled, cv::Point(j, i), 8, cv::Scalar(0, 0, 255), 2, 8, 0);
+            }
+        }
+    }
 }

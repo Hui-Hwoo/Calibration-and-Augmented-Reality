@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
         return (-1);
     }
 
-    namedWindow("Video", 1); // identifies a window
+    namedWindow("Overlay", 1); // identifies a window
 
     // Initialize cameraMatrix and distortion_ceofficients with the value in CSV file
     Mat cameraMatrix, distCoeffs;
@@ -57,7 +57,9 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        Mat dst;
+        Mat dst, dst1;
+        Mat dst2 = frame.clone();
+        // dst1 = Mat::zeros(frame.size(), CV_8UC3);
         vector<Point2f> corner_set = detectCorners(frame, dst);
 
         Mat rvec, tvec;
@@ -65,7 +67,8 @@ int main(int argc, char *argv[]) {
         if (corner_set.size() == 54) {
             solvePnP(point_set, corner_set, cameraMatrix, distCoeffs, rvec, tvec);
             projectCorner(frame, dst, rvec, tvec, cameraMatrix, distCoeffs);
-            goldenGateBridge(frame, dst, rvec, tvec, cameraMatrix, distCoeffs);
+            goldenGateBridge(dst, dst1, rvec, tvec, cameraMatrix, distCoeffs);
+            tower(dst1, dst2, rvec, tvec, cameraMatrix, distCoeffs);
             cout
                 << "Rotation: " << endl
                 << rvec << endl
@@ -75,12 +78,12 @@ int main(int argc, char *argv[]) {
                  << endl;
         }
 
-        imshow("Overlay", dst);
+        imshow("Overlay", dst2);
 
         Mat dstClone;
         switch (pollKey()) {
         case 's':
-            dstClone = dst.clone();
+            dstClone = dst2.clone();
             saveImage(dstClone);
             break;
         case 'q':

@@ -30,6 +30,8 @@ void projectCorner(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, 
 // Create a Virtual Object
 void goldenGateBridge(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs);
 
+void tower(Mat &src, Mat &dst, Mat &rvec, Mat &tvec, Mat &cameraMatrix, Mat &distCoeffs);
+
 // Detect Robust Features
 void detectRobustFeatures(Mat &src, Mat &dst);
 

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
         return (-1);
     }
 
-    namedWindow("Video", 1); // identifies a window
+    namedWindow("Calibration", 1); // identifies a window
 
     // Create or/and initialize basic variables
     vector<vector<Point2f>> corner_list;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
         Mat dst;
         vector<Point2f> corner_set = detectCorners(frame, dst);
-        imshow("Video", dst);
+        imshow("Calibration", dst);
 
         switch (pollKey()) {
         case 'q':
