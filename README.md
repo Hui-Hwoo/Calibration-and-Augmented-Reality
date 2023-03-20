@@ -51,6 +51,8 @@ In the treminal, enter command `make run_feature && ./run_feature` to compile an
 
 - Use `make clean` commmand to remove temporary files created when compiling
 
+- Saved images will be renamed by the timestamps in `img` directory, therefore, the newely saved image will be the last one
+
 - Program may have some delays, thank you for your patience :)
 
 
